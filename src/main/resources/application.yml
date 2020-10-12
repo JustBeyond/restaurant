@@ -1,0 +1,48 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /rainbow
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    url: RBZ(BED5E963A8AA44B6C3D9F98D36DED728F5F40361246542D12C95B05F5ACB889F12C5722AB870F95A35D8A6F11F38BE0E)
+    username: RBZ(270479F7FFEAEF73D4C792E0B9A983EF)
+    password: RBZ(270479F7FFEAEF73D4C792E0B9A983EF)
+    maxActive: 20
+    initialSize: 5
+    maxWait: 31536000
+    minIdle: 5
+    timeBetweenEvictionRunsMillis: 60000
+    minEvictableIdleTimeMillis: 300000
+    validationQuery: SELECT 1 FROM DUAL
+    testWhileIdle: true
+    testOnBorrow: true
+    testOnReturn: false
+    poolPreparedStatements: true
+    maxOpenPreparedStatements: 20
+    filters: stat,wall
+    connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+    useGlobalDataSourceStat: true
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML5
+  mvc:
+    static-path-pattern: /static/**
+  resources:
+    static-locations: classpath:/static/
+  messages:
+    basename: i18n/login
+mybatis-plus:
+  mapper-locations: classpath:mappers/*/*Mapper.xml
+  type-aliases-package: com.universe.rainbow.base.*.entity
+  type-aliases-super-type: java.lang.Object
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+logging:
+  config: classpath:logback.xml
