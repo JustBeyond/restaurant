@@ -1,16 +1,20 @@
 package com.furseal.restaurant.common.utils;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public class AreaAddressUtil {
     private static final String IP_ADDRESS_REQUEST_URL_TAOBAO = "http://ip.taobao.com/service/getIpInfo.php?ip=";
     private static final String IP_ADDRESS_REQUEST_URL_360 = "http://ip.360.cn/IPQuery/ipquery?ip=";
     private static final String IP_ADDRESS_REQUEST_URL_PCONLINE = "http://whois.pconline.com.cn/ipJson.jsp?json=true&level=3&ip=";
+    private static final String IP_ADDRESS_REQUEST_URL_BAIDU = "http://opendata.baidu.com/api.php?co=&resource_id=6006&oe=utf8&query=";
     private static final String DATA_SEPARATOR = "|";
     private static final String DATA_RESULT_SUCCESS = "0";
     private static final String DATA_RESULT_CODE = "code";
@@ -18,15 +22,17 @@ public class AreaAddressUtil {
     private static final String DATA_RESULT_COUNTRY = "country";
     private static final String DATA_RESULT_REGION = "region";
     private static final String DATA_RESULT_CITY = "city";
-    private static final String DATA_RESULT_PRO = "pro";
+    private static final String DATA_RESULT_ADDR = "addr";
 
     private static final String DATA_RESULT_ERRNO = "errno";
 
     public static String getAreaAddress(String ip) {
         String ipAddress = "";
         try {
-            //通过淘宝API获取IP地址区域
-            ipAddress = getIpAddressForPconline(ip);
+            ipAddress = getIpAddressRequestUrlBaidu(ip);
+            if (StringUtils.isEmpty(ipAddress)) {
+                ipAddress = getIpAddressForPconline(ip);
+            }
             if (StringUtils.isEmpty(ipAddress)) {
                 ipAddress = getIpAddressFor360(ip);
             }
@@ -43,25 +49,32 @@ public class AreaAddressUtil {
         return ipAddress;
     }
 
+    public static String getIpAddressRequestUrlBaidu(String ip) {
+        String ipAddress = "";
+        String result = HttpClientUtil.doPost(IP_ADDRESS_REQUEST_URL_BAIDU + ip, null, null);
+        log.debug("baidu get request ip address!!!!");
+        if (StringUtils.isNotEmpty(result)) {
+            JSONObject jsonObject = JSONObject.parseObject(result);
+            String status = jsonObject.getString("status");
+            if (!DATA_RESULT_SUCCESS.equals(status)) {
+                return null;
+            }
+            String data = jsonObject.getString("data");
+            JSONArray jsonArray = JSONArray.parseArray(data);
+            JSONObject object = (JSONObject) jsonArray.get(0);
+            ipAddress = "中国" + DATA_SEPARATOR + object.getString("location");
+        }
+        return ipAddress;
+    }
+
     public static String getIpAddressForPconline(String ip) {
         String ipAddress = "";
         String result = HttpClientUtil.doPost(IP_ADDRESS_REQUEST_URL_PCONLINE + ip, null, null);
-        System.out.println(result);
+        log.debug("pconline get request ip address!!!!");
         if (StringUtils.isNotEmpty(result)) {
             JSONObject jsonObject = JSONObject.parseObject(result);
             if (jsonObject != null) {
-                ipAddress = "中国" + DATA_SEPARATOR;
-                String pro = jsonObject.getString(DATA_RESULT_PRO);
-                if (StringUtils.isNotEmpty(pro)) {
-                    ipAddress += pro + DATA_SEPARATOR;
-                }
-                String city = jsonObject.getString(DATA_RESULT_CITY);
-                if (StringUtils.isNotEmpty(city)) {
-                    ipAddress += city + DATA_SEPARATOR;
-                }
-            }
-            if (StringUtils.isNotEmpty(ipAddress) && ipAddress.endsWith(DATA_SEPARATOR)) {
-                ipAddress = ipAddress.substring(0, ipAddress.length() - 1);
+                ipAddress = "中国" + DATA_SEPARATOR + jsonObject.getString(DATA_RESULT_ADDR);
             }
         }
         return ipAddress;
@@ -106,22 +119,24 @@ public class AreaAddressUtil {
                         }
                         String region = dataJson.getString(DATA_RESULT_REGION);
                         if (StringUtils.isNotEmpty(region)) {
-                            ipAddress += region + DATA_SEPARATOR;
+                            ipAddress += region;
                         }
                         String city = dataJson.getString(DATA_RESULT_CITY);
                         if (StringUtils.isNotEmpty(city)) {
-                            ipAddress += city + DATA_SEPARATOR;
+                            ipAddress += city;
                         }
                     }
                 }
-            }
-            if (StringUtils.isNotEmpty(ipAddress) && ipAddress.endsWith(DATA_SEPARATOR)) {
-                ipAddress = ipAddress.substring(0, ipAddress.length() - 1);
             }
         } catch (Exception e) {
             log.warn("taobao get ip address error !!! error = " + e.getMessage());
         }
         return ipAddress;
+    }
+
+    public static void main(String[] args) {
+        String areaAddress = AreaAddressUtil.getAreaAddress("47.105.41.241");
+        System.out.println(areaAddress);
     }
 
 }
